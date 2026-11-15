@@ -1,52 +1,147 @@
+
 package pg.complaint.dao;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.sql.SQLException;
 import java.util.ArrayList;
+
+import pg.database.DBConnection;
 import pg.complaint.model.Complaint;
 
 public class ComplaintDAO {
 
-    private static ArrayList<Complaint> complaints = new ArrayList<>();
+    public boolean addComplaint(Complaint complaint) {
 
-    private static int nextId = 1;
+        String sql = "INSERT INTO Complaint "
+                + "(student_id, category, description, complaint_date, status) "
+                + "VALUES (?, ?, ?, ?, ?)";
 
-    public void addComplaint(Complaint complaint) {
+        try (Connection con = DBConnection.getConnection()) {
 
-        complaint.setComplaintId(nextId++);
+            if (con == null) return false;
 
-        complaints.add(complaint);
+            try (PreparedStatement ps =
+                    con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+
+                ps.setInt(1, complaint.getStudentId());
+                ps.setString(2, complaint.getCategory());
+                ps.setString(3, complaint.getDescription());
+                ps.setDate(4, java.sql.Date.valueOf(complaint.getComplaintDate()));
+                ps.setString(5, complaint.getStatus());
+
+                if (ps.executeUpdate() > 0) {
+
+                    try (ResultSet rs = ps.getGeneratedKeys()) {
+                        if (rs.next()) {
+                            complaint.setComplaintId(rs.getInt(1));
+                        }
+                    }
+
+                    return true;
+                }
+            }
+
+        } catch (SQLException | IllegalArgumentException e) {
+            e.printStackTrace();
+        }
+
+        return false;
     }
 
     public ArrayList<Complaint> getAllComplaints() {
 
-        return new ArrayList<>(complaints);
+        ArrayList<Complaint> complaints = new ArrayList<>();
+
+        String sql = "SELECT * FROM Complaint";
+
+        try (Connection con = DBConnection.getConnection()) {
+
+            if (con == null) return complaints;
+
+            try (PreparedStatement ps = con.prepareStatement(sql);
+                 ResultSet rs = ps.executeQuery()) {
+
+                while (rs.next()) {
+
+                    complaints.add(new Complaint(
+                            rs.getInt("complaint_id"),
+                            rs.getInt("student_id"),
+                            rs.getString("category"),
+                            rs.getString("description"),
+                            rs.getDate("complaint_date").toString(),
+                            rs.getString("status")
+                    ));
+                }
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return complaints;
     }
 
     public Complaint getComplaintById(int complaintId) {
 
-        for (Complaint c : complaints) {
+        String sql = "SELECT * FROM Complaint WHERE complaint_id = ?";
 
-            if (c.getComplaintId() == complaintId) {
-                return c;
+        try (Connection con = DBConnection.getConnection()) {
+
+            if (con == null) return null;
+
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+
+                ps.setInt(1, complaintId);
+
+                try (ResultSet rs = ps.executeQuery()) {
+
+                    if (rs.next()) {
+                        return new Complaint(
+                                rs.getInt("complaint_id"),
+                                rs.getInt("student_id"),
+                                rs.getString("category"),
+                                rs.getString("description"),
+                                rs.getDate("complaint_date").toString(),
+                                rs.getString("status")
+                        );
+                    }
+                }
             }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
 
         return null;
     }
 
-    public boolean updateComplaint(int complaintId, Complaint updatedComplaint) {
+    public boolean updateComplaint(int complaintId, Complaint complaint) {
 
-        for (Complaint c : complaints) {
+        String sql = "UPDATE Complaint SET student_id=?, category=?, "
+                + "description=?, complaint_date=?, status=? "
+                + "WHERE complaint_id=?";
 
-            if (c.getComplaintId() == complaintId) {
+        try (Connection con = DBConnection.getConnection()) {
 
-                c.setStudentId(updatedComplaint.getStudentId());
-                c.setCategory(updatedComplaint.getCategory());
-                c.setDescription(updatedComplaint.getDescription());
-                c.setComplaintDate(updatedComplaint.getComplaintDate());
-                c.setStatus(updatedComplaint.getStatus());
+            if (con == null) return false;
 
-                return true;
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+
+                ps.setInt(1, complaint.getStudentId());
+                ps.setString(2, complaint.getCategory());
+                ps.setString(3, complaint.getDescription());
+                ps.setDate(4, java.sql.Date.valueOf(complaint.getComplaintDate()));
+                ps.setString(5, complaint.getStatus());
+                ps.setInt(6, complaintId);
+
+                return ps.executeUpdate() > 0;
             }
+
+        } catch (SQLException | IllegalArgumentException e) {
+            e.printStackTrace();
         }
 
         return false;
@@ -54,13 +149,20 @@ public class ComplaintDAO {
 
     public boolean deleteComplaint(int complaintId) {
 
-        for (Complaint c : complaints) {
+        String sql = "DELETE FROM Complaint WHERE complaint_id = ?";
 
-            if (c.getComplaintId() == complaintId) {
+        try (Connection con = DBConnection.getConnection()) {
 
-                complaints.remove(c);
-                return true;
+            if (con == null) return false;
+
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+
+                ps.setInt(1, complaintId);
+                return ps.executeUpdate() > 0;
             }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
 
         return false;
@@ -68,16 +170,38 @@ public class ComplaintDAO {
 
     public ArrayList<Complaint> getComplaintsByStudentId(int studentId) {
 
-        ArrayList<Complaint> result = new ArrayList<>();
+        ArrayList<Complaint> complaints = new ArrayList<>();
 
-        for (Complaint c : complaints) {
+        String sql = "SELECT * FROM Complaint WHERE student_id = ?";
 
-            if (c.getStudentId() == studentId) {
-                result.add(c);
+        try (Connection con = DBConnection.getConnection()) {
+
+            if (con == null) return complaints;
+
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+
+                ps.setInt(1, studentId);
+
+                try (ResultSet rs = ps.executeQuery()) {
+
+                    while (rs.next()) {
+
+                        complaints.add(new Complaint(
+                                rs.getInt("complaint_id"),
+                                rs.getInt("student_id"),
+                                rs.getString("category"),
+                                rs.getString("description"),
+                                rs.getDate("complaint_date").toString(),
+                                rs.getString("status")
+                        ));
+                    }
+                }
             }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
 
-        return result;
+        return complaints;
     }
-
 }

@@ -1,36 +1,46 @@
+
 package pg.complaint.service;
 
 import pg.complaint.dao.ComplaintDAO;
 import pg.complaint.model.Complaint;
+
 import java.util.ArrayList;
 
 public class ComplaintService {
 
     private ComplaintDAO complaintDAO = new ComplaintDAO();
 
-    public void addComplaint(Complaint complaint) {
+    public boolean addComplaint(Complaint complaint) {
 
         if (complaint.getStudentId() <= 0) {
             throw new IllegalArgumentException("Invalid Student ID");
         }
 
-        if (complaint.getCategory() == null || complaint.getCategory().isBlank()) {
-            throw new IllegalArgumentException("Complaint category cannot be empty");
+        if (complaint.getCategory() == null
+                || complaint.getCategory().isBlank()) {
+            throw new IllegalArgumentException(
+                    "Complaint category cannot be empty");
         }
 
-        if (complaint.getDescription() == null || complaint.getDescription().isBlank()) {
-            throw new IllegalArgumentException("Complaint description cannot be empty");
+        if (complaint.getDescription() == null
+                || complaint.getDescription().isBlank()) {
+            throw new IllegalArgumentException(
+                    "Complaint description cannot be empty");
+        }
+
+        if (complaint.getComplaintDate() == null
+                || complaint.getComplaintDate().isBlank()) {
+            throw new IllegalArgumentException(
+                    "Complaint date cannot be empty");
         }
 
         complaint.setStatus("Pending");
 
-        complaintDAO.addComplaint(complaint);
+        return complaintDAO.addComplaint(complaint);
     }
 
     public ArrayList<Complaint> getAllComplaints() {
-
         return complaintDAO.getAllComplaints();
-
     }
 
     public Complaint getComplaintById(int complaintId) {
@@ -51,17 +61,16 @@ public class ComplaintService {
         return complaintDAO.getComplaintsByStudentId(studentId);
     }
 
-    public void updateComplaintStatus(int complaintId, String status) {
+    public boolean updateComplaintStatus(int complaintId, String status) {
 
         if (complaintId <= 0) {
             throw new IllegalArgumentException("Invalid Complaint ID");
         }
 
-        if (status == null ||
-                !(status.equals("Pending") ||
-                        status.equals("In Progress") ||
-                        status.equals("Resolved"))) {
-
+        if (status == null
+                || !(status.equals("Pending")
+                || status.equals("In Progress")
+                || status.equals("Resolved"))) {
             throw new IllegalArgumentException("Invalid Complaint Status");
         }
 
@@ -72,8 +81,11 @@ public class ComplaintService {
         }
 
         complaint.setStatus(status);
+
+        return complaintDAO.updateComplaint(complaintId, complaint);
     }
-    public void deleteComplaint(int complaintId) {
+
+    public boolean deleteComplaint(int complaintId) {
 
         if (complaintId <= 0) {
             throw new IllegalArgumentException("Invalid Complaint ID");
@@ -85,8 +97,6 @@ public class ComplaintService {
             throw new IllegalArgumentException("Complaint not found");
         }
 
-        complaintDAO.deleteComplaint(complaintId);
+        return complaintDAO.deleteComplaint(complaintId);
     }
-
-
 }

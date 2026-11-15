@@ -1,22 +1,30 @@
+
 package pg.complaint.ui;
+
 import pg.complaint.model.Complaint;
 import pg.complaint.service.ComplaintService;
+
 import java.time.LocalDate;
-import javax.swing.JOptionPane;
-import javax.swing.JFrame;
-import java.awt.BorderLayout;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.SwingConstants;
-import java.awt.GridLayout;
-import javax.swing.JButton;
-import javax.swing.BorderFactory;
-import javax.swing.JTable;
-import javax.swing.JScrollPane;
-import javax.swing.table.DefaultTableModel;
 import java.util.ArrayList;
 
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JButton;
+import javax.swing.JOptionPane;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.BorderFactory;
+import javax.swing.SwingConstants;
+import javax.swing.table.DefaultTableModel;
+
+import java.awt.BorderLayout;
+import java.awt.GridLayout;
+import java.awt.Font;
+
 public class ComplaintModule extends JFrame {
+
+    private ComplaintService complaintService = new ComplaintService();
 
     public ComplaintModule() {
 
@@ -27,33 +35,36 @@ public class ComplaintModule extends JFrame {
         setLayout(new BorderLayout(10, 10));
 
         // Heading
-        JLabel heading = new JLabel("COMPLAINT MANAGEMENT", SwingConstants.CENTER);
-        heading.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 24));
+        JLabel heading = new JLabel(
+                "COMPLAINT MANAGEMENT",
+                SwingConstants.CENTER
+        );
+
+        heading.setFont(new Font("Arial", Font.BOLD, 24));
 
         add(heading, BorderLayout.NORTH);
 
-        // Main panel
-        JPanel mainPanel = new JPanel();
-        add(mainPanel, BorderLayout.CENTER);
+        // Main Panel
+        JPanel mainPanel = new JPanel(
+                new GridLayout(3, 2, 15, 15)
+        );
 
-        mainPanel.setLayout(new GridLayout(3, 2, 15, 15));
+        mainPanel.setBorder(
+                BorderFactory.createEmptyBorder(30, 30, 30, 30)
+        );
 
         JButton submitButton = new JButton("Submit Complaint");
-        submitButton.addActionListener(e -> submitComplaint());
-
         JButton viewButton = new JButton("View All Complaints");
-        viewButton.addActionListener(e -> viewAllComplaints());
-
         JButton searchButton = new JButton("Search Complaint");
-        searchButton.addActionListener(e -> searchComplaint());
-
         JButton studentSearchButton = new JButton("Search by Student ID");
-        studentSearchButton.addActionListener(e -> searchByStudentId());
-
         JButton updateButton = new JButton("Update Complaint Status");
-        updateButton.addActionListener(e -> updateComplaintStatus());
-
         JButton deleteButton = new JButton("Delete Complaint");
+
+        submitButton.addActionListener(e -> submitComplaint());
+        viewButton.addActionListener(e -> viewAllComplaints());
+        searchButton.addActionListener(e -> searchComplaint());
+        studentSearchButton.addActionListener(e -> searchByStudentId());
+        updateButton.addActionListener(e -> updateComplaintStatus());
         deleteButton.addActionListener(e -> deleteComplaint());
 
         mainPanel.add(submitButton);
@@ -63,29 +74,39 @@ public class ComplaintModule extends JFrame {
         mainPanel.add(updateButton);
         mainPanel.add(deleteButton);
 
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
+        add(mainPanel, BorderLayout.CENTER);
 
-        setVisible(true);
+        // Footer
+        JLabel footer = new JLabel(
+                "PG Management System | Complaint Module",
+                SwingConstants.CENTER
+        );
 
+        add(footer, BorderLayout.SOUTH);
     }
+
+    // Submit Complaint
     private void submitComplaint() {
 
         String studentIdInput = JOptionPane.showInputDialog(
-                this, "Enter Student ID:");
+                this, "Enter Student ID:"
+        );
 
         if (studentIdInput == null) {
             return;
         }
 
         String category = JOptionPane.showInputDialog(
-                this, "Enter Complaint Category:");
+                this, "Enter Complaint Category:"
+        );
 
         if (category == null) {
             return;
         }
 
         String description = JOptionPane.showInputDialog(
-                this, "Enter Complaint Description:");
+                this, "Enter Complaint Description:"
+        );
 
         if (description == null) {
             return;
@@ -93,39 +114,54 @@ public class ComplaintModule extends JFrame {
 
         try {
 
-            int studentId = Integer.parseInt(studentIdInput);
+            int studentId = Integer.parseInt(studentIdInput.trim());
 
             Complaint complaint = new Complaint(
                     0,
                     studentId,
-                    category,
-                    description,
+                    category.trim(),
+                    description.trim(),
                     LocalDate.now().toString(),
                     "Pending"
             );
 
-            complaintService.addComplaint(complaint);
+            boolean added = complaintService.addComplaint(complaint);
 
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Complaint submitted successfully!\nComplaint ID: "
-                            + complaint.getComplaintId()
-            );
+            if (added) {
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Complaint submitted successfully!\nComplaint ID: "
+                                + complaint.getComplaintId()
+                );
+
+            } else {
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Complaint could not be saved in database!"
+                );
+            }
 
         } catch (NumberFormatException e) {
 
-            JOptionPane.showMessageDialog(this, "Student ID must be a number!");
+            JOptionPane.showMessageDialog(
+                    this, "Student ID must be a number!"
+            );
 
         } catch (IllegalArgumentException e) {
 
-            JOptionPane.showMessageDialog(this, e.getMessage());
-
+            JOptionPane.showMessageDialog(
+                    this, e.getMessage()
+            );
         }
-
     }
+
+    // View All Complaints
     private void viewAllComplaints() {
 
-        ArrayList<Complaint> complaints = complaintService.getAllComplaints();
+        ArrayList<Complaint> complaints =
+                complaintService.getAllComplaints();
 
         String[] columns = {
                 "Complaint ID",
@@ -136,35 +172,30 @@ public class ComplaintModule extends JFrame {
                 "Status"
         };
 
-        DefaultTableModel model = new DefaultTableModel(columns, 0);
+        DefaultTableModel model =
+                new DefaultTableModel(columns, 0);
 
         for (Complaint c : complaints) {
 
-            Object[] row = {
+            model.addRow(new Object[]{
                     c.getComplaintId(),
                     c.getStudentId(),
                     c.getCategory(),
                     c.getDescription(),
                     c.getComplaintDate(),
                     c.getStatus()
-            };
-
-            model.addRow(row);
+            });
         }
 
-        JTable table = new JTable(model);
-
-        JOptionPane.showMessageDialog(
-                this,
-                new JScrollPane(table),
-                "All Complaints",
-                JOptionPane.INFORMATION_MESSAGE
-        );
+        showTable(model, "All Complaints");
     }
+
+    // Search Complaint
     private void searchComplaint() {
 
         String input = JOptionPane.showInputDialog(
-                this, "Enter Complaint ID:");
+                this, "Enter Complaint ID:"
+        );
 
         if (input == null) {
             return;
@@ -172,42 +203,42 @@ public class ComplaintModule extends JFrame {
 
         try {
 
-            int complaintId = Integer.parseInt(input);
+            int complaintId = Integer.parseInt(input.trim());
 
-            Complaint complaint = complaintService.getComplaintById(complaintId);
+            Complaint complaint =
+                    complaintService.getComplaintById(complaintId);
 
             if (complaint == null) {
 
-                JOptionPane.showMessageDialog(this, "Complaint not found!");
+                JOptionPane.showMessageDialog(
+                        this, "Complaint not found!"
+                );
 
             } else {
 
-                JOptionPane.showMessageDialog(
-                        this,
-                        "Complaint ID: " + complaint.getComplaintId()
-                                + "\nStudent ID: " + complaint.getStudentId()
-                                + "\nCategory: " + complaint.getCategory()
-                                + "\nDescription: " + complaint.getDescription()
-                                + "\nDate: " + complaint.getComplaintDate()
-                                + "\nStatus: " + complaint.getStatus()
-                );
-
+                showComplaintDetails(complaint);
             }
 
         } catch (NumberFormatException e) {
 
-            JOptionPane.showMessageDialog(this, "Please enter a valid numeric ID!");
+            JOptionPane.showMessageDialog(
+                    this, "Please enter a valid numeric ID!"
+            );
 
         } catch (IllegalArgumentException e) {
 
-            JOptionPane.showMessageDialog(this, e.getMessage());
-
+            JOptionPane.showMessageDialog(
+                    this, e.getMessage()
+            );
         }
     }
+
+    // Search by Student ID
     private void searchByStudentId() {
 
         String input = JOptionPane.showInputDialog(
-                this, "Enter Student ID:");
+                this, "Enter Student ID:"
+        );
 
         if (input == null) {
             return;
@@ -215,49 +246,77 @@ public class ComplaintModule extends JFrame {
 
         try {
 
-            int studentId = Integer.parseInt(input);
+            int studentId = Integer.parseInt(input.trim());
 
             ArrayList<Complaint> complaints =
                     complaintService.getComplaintsByStudentId(studentId);
 
             if (complaints.isEmpty()) {
 
-                JOptionPane.showMessageDialog(this, "No complaints found for this student!");
+                JOptionPane.showMessageDialog(
+                        this,
+                        "No complaints found for this student!"
+                );
 
             } else {
 
-                StringBuilder result = new StringBuilder();
+                String[] columns = {
+                        "Complaint ID",
+                        "Student ID",
+                        "Category",
+                        "Description",
+                        "Date",
+                        "Status"
+                };
+
+                DefaultTableModel model =
+                        new DefaultTableModel(columns, 0);
 
                 for (Complaint c : complaints) {
 
-                    result.append("Complaint ID: ").append(c.getComplaintId())
-                            .append("\nCategory: ").append(c.getCategory())
-                            .append("\nDescription: ").append(c.getDescription())
-                            .append("\nDate: ").append(c.getComplaintDate())
-                            .append("\nStatus: ").append(c.getStatus())
-                            .append("\n-------------------------\n");
+                    model.addRow(new Object[]{
+                            c.getComplaintId(),
+                            c.getStudentId(),
+                            c.getCategory(),
+                            c.getDescription(),
+                            c.getComplaintDate(),
+                            c.getStatus()
+                    });
                 }
 
-                JOptionPane.showMessageDialog(this, result.toString());
+                showTable(model, "Student Complaints");
             }
 
         } catch (NumberFormatException e) {
 
-            JOptionPane.showMessageDialog(this, "Student ID must be a number!");
+            JOptionPane.showMessageDialog(
+                    this, "Student ID must be a number!"
+            );
 
         } catch (IllegalArgumentException e) {
 
-            JOptionPane.showMessageDialog(this, e.getMessage());
+            JOptionPane.showMessageDialog(
+                    this, e.getMessage()
+            );
         }
     }
+
+    // Update Complaint Status
     private void updateComplaintStatus() {
 
         String input = JOptionPane.showInputDialog(
-                this, "Enter Complaint ID:");
+                this, "Enter Complaint ID:"
+        );
 
-        if (input == null) return;
+        if (input == null) {
+            return;
+        }
 
-        String[] statuses = {"Pending", "In Progress", "Resolved"};
+        String[] statuses = {
+                "Pending",
+                "In Progress",
+                "Resolved"
+        };
 
         String status = (String) JOptionPane.showInputDialog(
                 this,
@@ -269,32 +328,62 @@ public class ComplaintModule extends JFrame {
                 statuses[0]
         );
 
-        if (status == null) return;
+        if (status == null) {
+            return;
+        }
 
         try {
-            int complaintId = Integer.parseInt(input);
 
-            complaintService.updateComplaintStatus(complaintId, status);
+            int complaintId = Integer.parseInt(input.trim());
 
-            JOptionPane.showMessageDialog(
-                    this, "Complaint status updated successfully!");
+            boolean updated =
+                    complaintService.updateComplaintStatus(
+                            complaintId, status
+                    );
+
+            if (updated) {
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Complaint status updated successfully!"
+                );
+
+            } else {
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Complaint status could not be updated!"
+                );
+            }
 
         } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Please enter a valid numeric ID!");
+
+            JOptionPane.showMessageDialog(
+                    this, "Please enter a valid numeric ID!"
+            );
+
         } catch (IllegalArgumentException e) {
-            JOptionPane.showMessageDialog(this, e.getMessage());
+
+            JOptionPane.showMessageDialog(
+                    this, e.getMessage()
+            );
         }
     }
 
+    // Delete Complaint
     private void deleteComplaint() {
 
         String input = JOptionPane.showInputDialog(
-                this, "Enter Complaint ID:");
+                this, "Enter Complaint ID:"
+        );
 
-        if (input == null) return;
+        if (input == null) {
+            return;
+        }
 
         try {
-            int complaintId = Integer.parseInt(input);
+
+            int complaintId = Integer.parseInt(input.trim());
 
             int choice = JOptionPane.showConfirmDialog(
                     this,
@@ -305,24 +394,86 @@ public class ComplaintModule extends JFrame {
 
             if (choice == JOptionPane.YES_OPTION) {
 
-                complaintService.deleteComplaint(complaintId);
+                boolean deleted =
+                        complaintService.deleteComplaint(complaintId);
 
-                JOptionPane.showMessageDialog(
-                        this, "Complaint deleted successfully!");
+                if (deleted) {
+
+                    JOptionPane.showMessageDialog(
+                            this,
+                            "Complaint deleted successfully!"
+                    );
+
+                } else {
+
+                    JOptionPane.showMessageDialog(
+                            this,
+                            "Complaint could not be deleted!"
+                    );
+                }
             }
 
         } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Please enter a valid numeric ID!");
+
+            JOptionPane.showMessageDialog(
+                    this, "Please enter a valid numeric ID!"
+            );
+
         } catch (IllegalArgumentException e) {
-            JOptionPane.showMessageDialog(this, e.getMessage());
+
+            JOptionPane.showMessageDialog(
+                    this, e.getMessage()
+            );
         }
     }
 
-    private ComplaintService complaintService = new ComplaintService();
-    public static void main(String[] args) {
+    // Display Complaint Details
+    private void showComplaintDetails(Complaint complaint) {
 
-        new ComplaintModule();
+        String details =
+                "Complaint ID: " + complaint.getComplaintId()
+                + "\nStudent ID: " + complaint.getStudentId()
+                + "\nCategory: " + complaint.getCategory()
+                + "\nDescription: " + complaint.getDescription()
+                + "\nDate: " + complaint.getComplaintDate()
+                + "\nStatus: " + complaint.getStatus();
 
+        JOptionPane.showMessageDialog(
+                this,
+                details,
+                "Complaint Details",
+                JOptionPane.INFORMATION_MESSAGE
+        );
     }
 
+    // Display Table
+    private void showTable(
+            DefaultTableModel model,
+            String title
+    ) {
+
+        JTable table = new JTable(model);
+
+        table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+
+        JScrollPane scrollPane = new JScrollPane(table);
+
+        scrollPane.setPreferredSize(
+                new java.awt.Dimension(800, 350)
+        );
+
+        JOptionPane.showMessageDialog(
+                this,
+                scrollPane,
+                title,
+                JOptionPane.INFORMATION_MESSAGE
+        );
+    }
+
+    public static void main(String[] args) {
+
+        javax.swing.SwingUtilities.invokeLater(() -> {
+            new ComplaintModule().setVisible(true);
+        });
+    }
 }

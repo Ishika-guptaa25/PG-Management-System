@@ -1,36 +1,81 @@
 
 package pg.room.dao;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
+
+import pg.database.DBConnection;
 import pg.room.model.RoomAllocation;
 
 public class RoomAllocationDAO {
 
-    private static ArrayList<RoomAllocation> allocations =
-            new ArrayList<>();
-
-    private static int nextId = 1;
-
     public void addAllocation(int studentId, int roomId) {
 
-        RoomAllocation allocation =
-                new RoomAllocation(nextId++, studentId, roomId);
+        String sql = "INSERT INTO Room_Allocation (student_id, room_id) VALUES (?, ?)";
 
-        allocations.add(allocation);
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+
+            ps.setInt(1, studentId);
+            ps.setInt(2, roomId);
+
+            ps.executeUpdate();
+
+            try (ResultSet rs = ps.getGeneratedKeys()) {
+                if (rs.next()) {
+                    System.out.println("Allocation ID: " + rs.getInt(1));
+                }
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     public ArrayList<RoomAllocation> getAllAllocations() {
-        return new ArrayList<>(allocations);
+
+        ArrayList<RoomAllocation> allocations = new ArrayList<>();
+
+        String sql = "SELECT * FROM Room_Allocation ORDER BY allocation_id";
+
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+
+                RoomAllocation allocation = new RoomAllocation(
+                    rs.getInt("allocation_id"),
+                    rs.getInt("student_id"),
+                    rs.getInt("room_id")
+                );
+
+                allocations.add(allocation);
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return allocations;
     }
 
     public boolean removeAllocation(int studentId) {
 
-        for (RoomAllocation a : allocations) {
+        String sql = "DELETE FROM Room_Allocation WHERE student_id = ?";
 
-            if (a.getStudentId() == studentId) {
-                allocations.remove(a);
-                return true;
-            }
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, studentId);
+
+            return ps.executeUpdate() > 0;
+
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
 
         return false;
@@ -38,25 +83,43 @@ public class RoomAllocationDAO {
 
     public int getOccupiedCount(int roomId) {
 
-        int count = 0;
+        String sql = "SELECT COUNT(*) FROM Room_Allocation WHERE room_id = ?";
 
-        for (RoomAllocation a : allocations) {
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
 
-            if (a.getRoomId() == roomId) {
-                count++;
+            ps.setInt(1, roomId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
             }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
 
-        return count;
+        return 0;
     }
 
     public boolean isStudentAllocated(int studentId) {
 
-        for (RoomAllocation a : allocations) {
+        String sql = "SELECT COUNT(*) FROM Room_Allocation WHERE student_id = ?";
 
-            if (a.getStudentId() == studentId) {
-                return true;
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, studentId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
             }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
 
         return false;
