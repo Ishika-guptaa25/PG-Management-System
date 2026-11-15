@@ -18,7 +18,7 @@ public class RoomModule extends JFrame {
 
         setTitle("PG Management - Room Module");
         setSize(850, 500);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout(15, 15));
 
